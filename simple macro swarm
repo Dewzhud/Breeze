@@ -1,0 +1,155 @@
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+local Window = WindUI:CreateWindow({
+    Title = "Bucko Bee (LEGIT)",
+    Icon = "", -- lucide icon
+    Author = "Onett",
+
+    Size = UDim2.fromOffset(580, 460),
+    MinSize = Vector2.new(560, 350),
+    MaxSize = Vector2.new(850, 560),
+    Transparent = true,
+    Theme = "Dark",
+    Resizable = true,
+    SideBarWidth = 150,
+    BackgroundImageTransparency = 0.42,
+    HideSearchBar = false,
+    ScrollBarEnabled = false,
+    
+  
+})
+
+Window:Divider()
+
+local Section = Window:Section({
+    Title = "Main",
+    Icon = "",
+    Opened = true,
+})
+
+local Main = Section:Tab({
+    Title = "Main",
+    Icon = "sword", -- optional
+    Locked = false,
+})
+
+local Utility = Section:Tab({
+    Title = "utility",
+    Icon = "tool-case", -- optional
+    Locked = false,
+})
+
+local Render = Section:Tab({
+    Title = "render",
+    Icon = "eye", -- optional
+    Locked = false,
+})
+
+
+local TaskFlags = {}
+
+function Task(name, func)
+    if TaskFlags[name] then return end 
+    TaskFlags[name] = true
+    task.spawn(function()
+        while TaskFlags[name] do
+            func()
+            task.wait(.1)
+        end
+    end)
+end
+
+function Stop(name)
+    TaskFlags[name] = false
+end
+
+
+
+local function GetDist(p1,p2)
+    return (p1 - p2).Magnitude
+end
+
+
+do 
+    local Me = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+    local VT = game:GetService("VirtualInputManager")
+    local Enable = false
+     local WalkE = false
+    local Field
+ 
+    local function GetPoint()
+        local Size = workspace.FlowerZones:WaitForChild(Field).Size
+        local Cf = workspace.FlowerZones:WaitForChild(Field).CFrame
+       
+        local x = math.random(-Size.X/2 , Size.X/2)
+        local z = math.random(-Size.Z/2 , Size.Z/2)
+        return Cf:PointToWorldSpace(Vector3.new(x,0,z))
+    end
+
+
+    local ClickTg = Main:Toggle({
+    Title = "Enable CLick",
+    Desc = "ALWAYS LEGIT",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, 
+    Callback = function(state) 
+        Enable = state
+        if not Enable then
+            game:GetService"VirtualUser":Button1Down(Vector2.new(0.9, 0.9))
+            game:GetService"VirtualUser":Button1Up(Vector2.new(0.9, 0.9))
+                
+          return  Stop("Click")
+        end
+
+        Task("Click", function()
+               VT:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+VT:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+
+
+  end)
+
+    end
+    })
+
+    local Dropdown = Main:Dropdown({
+    Title = "Field",
+    Desc = "Choose ur field",
+    Values = { "Mushroom Field", "Sunflower Field", "Dandelion Field","Clover Field","Blue Flower Field","Spider Field","Strawberry Field","Bamboo Field","Pineapple Patch","Cactus Field","Pumpkin Patch","Pine Tree Forest","Mountain Top Field"},
+    Value = "Category A",
+    Callback = function(option) 
+        Field = option
+    end
+    })
+    local Toggle = Main:Toggle({
+    Title = "Walk",
+    Desc = "Radom pos to walk in field",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        WalkE = state
+        if not WalkE then
+            return Stop("Walk")
+        end
+pcall(function()
+
+
+end)
+
+        Task("Walk",function()
+   local Part = workspace.FlowerZones:WaitForChild(Field)
+
+            if GetDist(Part.Position , Me.Position) <= 250 then
+                task.wait(0.8)
+                local Tar = GetPoint()
+game.Players.LocalPlayer.Character.Humanoid:MoveTo(Tar)
+            end
+        end)
+
+
+    end
+    })
+
+
+end
