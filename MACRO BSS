@@ -3,7 +3,7 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 local Window = WindUI:CreateWindow({
     Title = "Macro Swarm (LEGIT)",
     Icon = "", 
-    Author = "Onett",
+    Author = "Onett 6767",
 
     Size = UDim2.fromOffset(580, 460),
     MinSize = Vector2.new(560, 350),
@@ -201,7 +201,7 @@ do
                     end
 
                     if not _G.Gather then
-                         local near = Nearest(Field)
+                         local near = Nearest(Field.Position)
                         if near then
                             local success = Go(near)
                         if success then
