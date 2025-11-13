@@ -1,7 +1,7 @@
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-    Title = "Bucko Bee (LEGIT)",
+    Title = "Cobalt Swarm (LEGIT)",
     Icon = "", -- lucide icon
     Author = "Onett",
 
@@ -110,8 +110,8 @@ do
                 
                 dist , near = mag , n
             end
-
         end
+        return near , dist
     end
 
     local function Go(area)
