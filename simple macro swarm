@@ -1,7 +1,7 @@
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-    Title = "Bucko Bee (LEGIT)",
+    Title = "Bucko Bee (LEGIT) 9999",
     Icon = "", 
     Author = "Onett",
 
@@ -19,12 +19,7 @@ local Window = WindUI:CreateWindow({
   
 })
 
-Window:Tag({
-    Title = "Free",
-    Icon = "badge-check",
-    Color = Color3.fromHex("#30ff6a"),
-    Radius = 0, -
-})
+
 
 Window:Divider()
 
