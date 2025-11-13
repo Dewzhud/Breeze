@@ -90,7 +90,7 @@ do
     
     }
 
-    local Players game:GetService("Players")
+   
     local PFS = game:GetService("PathfindingService")
     local Me = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
     local hum = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
@@ -203,7 +203,7 @@ do
             return Stop("Walk")
         end
         Task("Walk",function()
-          
+           local Players game:GetService("Players")
           local core = Players.LocalPlayer.CoreStats
           local Cap = core.Capacity
           local Pollen = core.Pollen
