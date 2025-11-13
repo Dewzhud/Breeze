@@ -106,30 +106,30 @@ do
     end
 
 
-    local function Go(area)
-        local path = PFS:CreatePath({
-            AgentCanJump = true
-        })
-        PFS:ComputeAsync(Me.Position,area.Position)
+   local function Go(area)
+    local path = PFS:CreatePath({
+        AgentCanJump = true
+    })
 
-        if path.Status == Enum.PathStatus.Success then
+    path:ComputeAsync(Me.Position, area.Position)
+
+    if path.Status ~= Enum.PathStatus.Success then
+        return false
+    end
+
+    for _, wp in pairs(path:GetWaypoints()) do
+        if wp.Action == Enum.PathWaypointAction.Jump then
+            hum.Jump = true
+        end
+        hum:MoveTo(wp.Position)
+        if not hum.MoveToFinished:Wait() then
             return false
         end
-
-        for _, wp in pairs(path:GetWaypoints()) do
-            if wp.Action == Enum.PathWaypointAction.Jump then
-                hum.Jump = true
-            end
-            hum:MoveTo(wp.Position)
-            if not hum.MoveToFinished:Wait() then
-                return false
-            end
-        end
-
-
-        return true
-
     end
+
+    return true
+    end
+
 
 
 
