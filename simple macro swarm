@@ -1,10 +1,10 @@
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
---// WINDOW SETUP
 local Window = WindUI:CreateWindow({
     Title = "Bucko Bee (LEGIT)",
-    Icon = "",
+    Icon = "", -- lucide icon
     Author = "Onett",
+
     Size = UDim2.fromOffset(580, 460),
     MinSize = Vector2.new(560, 350),
     MaxSize = Vector2.new(850, 560),
@@ -15,6 +15,8 @@ local Window = WindUI:CreateWindow({
     BackgroundImageTransparency = 0.42,
     HideSearchBar = false,
     ScrollBarEnabled = false,
+    
+  
 })
 
 Window:Divider()
@@ -27,32 +29,32 @@ local Section = Window:Section({
 
 local Main = Section:Tab({
     Title = "Main",
-    Icon = "sword",
+    Icon = "sword", -- optional
     Locked = false,
 })
 
 local Utility = Section:Tab({
-    Title = "Utility",
-    Icon = "tool-case",
+    Title = "utility",
+    Icon = "tool-case", -- optional
     Locked = false,
 })
 
 local Render = Section:Tab({
-    Title = "Render",
-    Icon = "eye",
+    Title = "render",
+    Icon = "eye", -- optional
     Locked = false,
 })
 
---// TASK HANDLER
+
 local TaskFlags = {}
 
 function Task(name, func)
-    if TaskFlags[name] then return end
+    if TaskFlags[name] then return end 
     TaskFlags[name] = true
     task.spawn(function()
         while TaskFlags[name] do
             func()
-            task.wait(0.1)
+            task.wait(.1)
         end
     end)
 end
@@ -61,15 +63,16 @@ function Stop(name)
     TaskFlags[name] = false
 end
 
---// UTILITY FUNCTIONS
-local function GetDist(p1, p2)
+
+
+local function GetDist(p1,p2)
     return (p1 - p2).Magnitude
 end
 
---// MAIN SCRIPT LOGIC
-do
-    local waypointZ = {
-         CFrame.new(-111.430428, 4.91108656, 271.171844, 0.999958992, -3.17094884e-09, 0.00905513112, 3.84649734e-09, 1, -7.45865023e-08, -0.00905513112, 7.46182778e-08, 0.999958992), --spawn
+
+do 
+    local waypointZ ={
+        CFrame.new(-111.430428, 4.91108656, 271.171844, 0.999958992, -3.17094884e-09, 0.00905513112, 3.84649734e-09, 1, -7.45865023e-08, -0.00905513112, 7.46182778e-08, 0.999958992), --spawn
         CFrame.new(-108.973328, 3.99999976, 172.421021, 0.997226119, -6.08509554e-09, -0.0744313225, 4.54527394e-09, 1, -2.08572075e-08, 0.0744313225, 2.04610409e-08, 0.997226119), -- corner
         CFrame.new(-108.973328, 3.99999976, 172.421021, 0.997226119, -6.08509554e-09, -0.0744313225, 4.54527394e-09, 1, -2.08572075e-08, 0.0744313225, 2.04610409e-08, 0.997226119),
         CFrame.new(-2.99104142, 4.26106167, 171.278656, 0.994760334, -5.86745337e-08, -0.102234378, 5.46336132e-08, 1, -4.23261213e-08, 0.102234378, 3.65189123e-08, 0.994760334),  
@@ -78,33 +81,46 @@ do
         CFrame.new(-133.415436, 19.9999981, 56.9060936, 0.12101718, -6.26261638e-08, 0.99265039, 1.23290187e-08, 1, 6.15867748e-08, -0.99265039, 4.78534723e-09, 0.12101718), -- Strawberry Field
     
     
+    
+    
+    
+    
+    
+    
+    
     }
 
-    local Players = game:GetService("Players")
-    local PFS = game:GetService("PathfindingService")
-    local Me = Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
-    local hum = Players.LocalPlayer.Character:WaitForChild("Humanoid")
 
+    local PFS = game:GetService("PathfindingService")
+    local Me = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+    local hum = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
+
+
+   
     _G.WalkE = false
     _G.Token = false
     local Field
 
+
     local function Nearest(area)
-        local nearest, dist = nil, math.huge
+        local near , dist = nil,math.huge
         for _, n in pairs(waypointZ) do
             local mag = (n.Position - area.Position).Magnitude
             if mag < dist then
-                dist, nearest = mag, n
+                
+                dist , near = mag , n
             end
+
         end
-        return nearest, dist
     end
 
     local function Go(area)
-        local path = PFS:CreatePath({ AgentCanJump = true })
-        path:ComputeAsync(Me.Position, area.Position)
+        local path = PFS:CreatePath({
+            AgentCanJump = true
+        })
+        PFS:ComputeAsync(Me.Position,area.Position)
 
-        if path.Status ~= Enum.PathStatus.Success then
+        if path.Status == Enum.PathStatus.Success then
             return false
         end
 
@@ -112,112 +128,108 @@ do
             if wp.Action == Enum.PathWaypointAction.Jump then
                 hum.Jump = true
             end
-
             hum:MoveTo(wp.Position)
-            if not hum.MoveToFinished:Wait() then
+            if nothum.MoveToFinished:Wait() then
                 return false
             end
         end
 
+
         return true
+
     end
+
+
+
 
     local function GetPoint()
         local Size = Field.Size
         local Cf = Field.CFrame
-
-        local x = math.random(-Size.X / 2, Size.X / 2)
-        local z = math.random(-Size.Z / 2, Size.Z / 2)
-        return Cf:PointToWorldSpace(Vector3.new(x, 0, z))
+       
+        local x = math.random(-Size.X/2 , -Size.X/2)
+        local z = math.random(-Size.Z/2 , -Size.Z/2)
+        return Cf:PointToWorldSpace(Vector3.new(x,0,z))
     end
 
-    --// UI
+   
+    
+
     local Dropdown = Main:Dropdown({
-        Title = "Field",
-        Desc = "Choose your field",
-        Values = {
-            "Mushroom Field", "Sunflower Field", "Dandelion Field", "Clover Field",
-            "Blue Flower Field", "Spider Field", "Strawberry Field", "Bamboo Field",
-            "Pineapple Patch", "Cactus Field", "Pumpkin Patch", "Pine Tree Forest",
-            "Rose Field", "Mountain Top Field",
-        },
-        Value = "Sunflower Field",
-        Callback = function(option)
-            Field = workspace.FlowerZones:WaitForChild(option)
-        end
+    Title = "Field",
+    Desc = "Choose ur field",
+    Values = { "Mushroom Field", "Sunflower Field", "Dandelion Field","Clover Field","Blue Flower Field","Spider Field","Strawberry Field","Bamboo Field","Pineapple Patch","Cactus Field","Pumpkin Patch","Pine Tree Forest"},
+    Value = "Category A",
+    Callback = function(option) 
+        Field = workspace.FlowerZones:WaitForChild(option)
+    end
     })
 
-    local TokenToggle = Main:Toggle({
-        Title = "Walk To Token",
-        Desc = "Random position to walk in field",
-        Icon = "check",
-        Type = "Checkbox",
-        Value = false,
-        Callback = function(state)
-            _G.Token = state
-        end
+    local Toggle1 = Main:Toggle({
+    Title = "Walk To Token",
+    Desc = "Radom pos to walk in field",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        _G.Token = state
+    end
     })
 
     local WalkToggle = Main:Toggle({
-        Title = "Farm",
-        Desc = "Random position to walk in field",
-        Icon = "check",
-        Type = "Checkbox",
-        Value = false,
-        Callback = function(state)
-            _G.WalkE = state
-            if not _G.WalkE then
-                return Stop("Walk")
-            end
-
-            Task("Walk", function()
-                if not Field then return end
-
-                local near = Nearest(Field)
-                local core = Players.LocalPlayer.CoreStats
-                local Cap = core.Capacity
-                local Pollen = core.Pollen
-
-                if Pollen.Value == Cap.Value then
-                    print("Backpack full")
-                else
-                    if near then
-                        local Suc = Go(near)
-                        if Suc then
-                            local WalkE = GetPoint()
-                            hum:MoveTo(WalkE)
-                        end
-                    end
-                end
-            end)
+    Title = "Farm",
+    Desc = "Radom pos to walk in field",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, -- default value
+    Callback = function(state) 
+        _G.WalkE = state
+        if not _G.WalkE then
+            return Stop("Walk")
         end
+        Task("Walk",function()
+          local near = Nearest(Field.Position)
+          if near then
+           local Suc = Go(near)
+            if Suc then
+                GetPoint()
+            end
+          end
+        end)
+
+
+    end
     })
+
+
 end
 
---// AUTO CLICKER
 do
-    local VirtualUser = game:GetService("VirtualUser")
-
+    local VT = game:GetService("VirtualInputManager")
     _G.Enable = false
-
-    local ClickToggle = Main:Toggle({
-        Title = "Enable Click",
-        Desc = "Always Legit",
-        Icon = "check",
-        Type = "Checkbox",
-        Value = false,
-        Callback = function(state)
-            _G.Enable = state
-
-            if not _G.Enable then
-                Stop("Click")
-                return
-            end
-
-            Task("Click", function()
-                VirtualUser:Button1Down(Vector2.new(0.9, 0.9))
-                VirtualUser:Button1Up(Vector2.new(0.9, 0.9))
-            end)
+    local ClickTg = Main:Toggle({
+    Title = "Enable CLick",
+    Desc = "ALWAYS LEGIT",
+    Icon = "check",
+    Type = "Checkbox",
+    Value = false, 
+    Callback = function(state) 
+        _G.Enable = state
+        if not Enable then
+            game:GetService"VirtualUser":Button1Down(Vector2.new(0.9, 0.9))
+            game:GetService"VirtualUser":Button1Up(Vector2.new(0.9, 0.9))
+                
+          return  Stop("Click")
         end
+
+        Task("Click", function()
+                game:GetService"VirtualUser":Button1Down(Vector2.new(0.9, 0.9))
+                game:GetService"VirtualUser":Button1Up(Vector2.new(0.9, 0.9))
+        end)
+
+    end
     })
+
+
+
+
 end
