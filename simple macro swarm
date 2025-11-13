@@ -1,7 +1,7 @@
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-    Title = "Bucko Bee (LEGIT)",
+    Title = "Macro Swarm (LEGIT)",
     Icon = "", 
     Author = "Onett",
 
@@ -80,17 +80,9 @@ do
         CFrame.new(-2.73469853, 19.9999981, 41.236969, 0.999326169, 3.95413524e-09, 0.0367041267, -4.25405267e-09, 1, 8.09312883e-09, -0.0367041267, -8.24381718e-09, 0.999326169), -- lv 15 Door
         CFrame.new(-133.415436, 19.9999981, 56.9060936, 0.12101718, -6.26261638e-08, 0.99265039, 1.23290187e-08, 1, 6.15867748e-08, -0.99265039, 4.78534723e-09, 0.12101718), -- Strawberry Field
     
-    
-    
-    
-    
-    
-    
-    
-    
     }
 
-    local Players game:GetService("Players")
+   
     local PFS = game:GetService("PathfindingService")
     local Me = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
     local hum = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
@@ -102,22 +94,23 @@ do
     local Field
 
 
-    local function Nearest(area)
+   local function Nearest(area)
     local nearest, dist = nil, math.huge
     for _, n in pairs(waypointZ) do
-        local mag = (n - area).Magnitude
+        local mag = (n.Position - area).Magnitude
         if mag < dist then
             dist, nearest = mag, n
         end
     end
-    return nearest, dist
+    return nearest
     end
+
 
     local function Go(area)
         local path = PFS:CreatePath({
             AgentCanJump = true
         })
-        PFS:ComputeAsync(Me.Position,area.Position)
+        PFS:ComputeAsync(Me.Position,area)
 
         if path.Status == Enum.PathStatus.Success then
             return false
@@ -128,7 +121,7 @@ do
                 hum.Jump = true
             end
             hum:MoveTo(wp.Position)
-            if nothum.MoveToFinished:Wait() then
+            if not hum.MoveToFinished:Wait() then
                 return false
             end
         end
@@ -202,17 +195,17 @@ do
             return Stop("Walk")
         end
         Task("Walk",function()
-          local near = Nearest(Field.Position)
-          local core = Players.LocalPlayer.CoreStats
+          local core = game:GetService("Players").LocalPlayer.CoreStats
           local Cap = core.Capacity
           local Pollen = core.Pollen
-
+            if not Field then return end
             if Pollen.Value == Cap.Value then
 
 
                 print("Full")
 
             else
+                local near = Nearest(Field.Position)
                 if near then
                     local Suc = Go(near)
                     if Suc then
