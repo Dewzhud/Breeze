@@ -3,7 +3,7 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 local Window = WindUI:CreateWindow({
     Title = "Macro Swarm (LEGIT)",
     Icon = "", 
-    Author = "Onett 6767",
+    Author = "Onett",
 
     Size = UDim2.fromOffset(580, 460),
     MinSize = Vector2.new(560, 350),
@@ -110,7 +110,7 @@ do
         AgentCanJump = true
     })
 
-    path:ComputeAsync(Me.Position, area.Position)
+    path:ComputeAsync(Me.Position, area)
 
     if path.Status ~= Enum.PathStatus.Success then
         return false
