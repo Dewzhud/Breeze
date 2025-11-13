@@ -90,7 +90,7 @@ do
 
    
     _G.WalkE = false
-    _G.Token = false
+    _G.Gather = false
     local Field
 
     local function Nearest(areaPos)
@@ -171,50 +171,52 @@ do
     end
     })
 
-    local Toggle1 = Main:Toggle({
-    Title = "Walk To Token",
-    Desc = "Radom pos to walk in field",
-    Icon = "check",
-    Type = "Checkbox",
-    Value = false, -- default value
-    Callback = function(state) 
-        _G.Token = state
-    end
-    })
+
+
 
     local WalkToggle = Main:Toggle({
     Title = "Farm",
     Desc = "Radom pos to walk in field",
     Icon = "check",
     Type = "Checkbox",
-    Value = false, -- default value
+    Value = false, 
     Callback = function(state) 
         _G.WalkE = state
         if not _G.WalkE then
+            _G.Gather = false
             return Stop("Walk")
         end
         Task("Walk",function()
-          local core = game:GetService("Players").LocalPlayer.CoreStats
-          local Cap = core.Capacity
-          local Pollen = core.Pollen
-            if not Field then return end
-            if Pollen.Value == Cap.Value then
+            if not _G.WalkE then return end
+                if not Field then return end
 
+                    local core = game.Players.LocalPlayer.CoreStats
+                    local Cap = core.Capacity
+                    local Pollen = core.Pollen
 
-                print("Full")
+                
+                    if Pollen.Value >= Cap.Value then
+                        print("Full")
+                        return
+                    end
 
-            else
-                local near = Nearest(Field.Position)
-                if near then
-                    local Suc = Go(near)
-                    if Suc then
-                       local WalkE = GetPoint()
-                       hum:MoveTo(WalkE)
-                        hum.MoveToFinished:Wait()
+                    if not _G.Gather then
+                         local near = Nearest(Field)
+                        if near then
+                            local success = Go(near)
+                        if success then
+                            _G.Gather = true 
+                        else
+                            return
                     end
                 end
             end
 
+            while _G.WalkE and Pollen.Value < Cap.Value do
+                local walkPoint = GetPoint()
+                hum:MoveTo(walkPoint)
+             hum.MoveToFinished:Wait()
+            end
         end)
 
 
