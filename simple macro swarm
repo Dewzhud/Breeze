@@ -19,6 +19,13 @@ local Window = WindUI:CreateWindow({
   
 })
 
+Window:Tag({
+    Title = "Free",
+    Icon = "badge-check",
+    Color = Color3.fromHex("#30ff6a"),
+    Radius = 0, -
+})
+
 Window:Divider()
 
 local Section = Window:Section({
