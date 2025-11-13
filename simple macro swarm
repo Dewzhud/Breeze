@@ -1,7 +1,7 @@
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-    Title = "Bucko Bee (LEGIT) 9999",
+    Title = "Bucko Bee (LEGIT)",
     Icon = "", 
     Author = "Onett",
 
@@ -18,8 +18,6 @@ local Window = WindUI:CreateWindow({
     
   
 })
-
-
 
 Window:Divider()
 
@@ -218,8 +216,8 @@ do
                 if near then
                     local Suc = Go(near)
                     if Suc then
-                       local WalkE =  GetPoint()
-                       hum:WalkTo(WalkE)
+                       local WalkE = GetPoint()
+                       hum:MoveTo(WalkE)
                     end
                 end
             end
