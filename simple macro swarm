@@ -110,7 +110,7 @@ do
         local path = PFS:CreatePath({
             AgentCanJump = true
         })
-        PFS:ComputeAsync(Me.Position,area)
+        PFS:ComputeAsync(Me.Position,area.Position)
 
         if path.Status == Enum.PathStatus.Success then
             return false
@@ -166,7 +166,7 @@ do
         "Mountain Top Field",
         
         },
-    Value = "Category A",
+    Value = "Mushroom Field",
     Callback = function(option) 
         Field = workspace.FlowerZones:WaitForChild(option)
     end
