@@ -1,7 +1,7 @@
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-    Title = "Cobalt Swarm (LEGIT)",
+    Title = "Bucko Bee (LEGIT)",
     Icon = "", -- lucide icon
     Author = "Onett",
 
@@ -103,16 +103,15 @@ do
 
 
     local function Nearest(area)
-        local near , dist = nil,math.huge
-        for _, n in pairs(waypointZ) do
-            local mag = (n.Position - area.Position).Magnitude
-            if mag < dist then
-                
-                dist , near = mag , n
-            end
+    local nearest, dist = nil, math.huge
+    for _, n in pairs(waypointZ) do
+        local mag = (n - area).Magnitude
+        if mag < dist then
+            dist, nearest = mag, n
         end
-        return near , dist
     end
+    return nearest, dist
+end
 
     local function Go(area)
         local path = PFS:CreatePath({
