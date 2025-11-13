@@ -203,8 +203,7 @@ do
             return Stop("Walk")
         end
         Task("Walk",function()
-           local Players game:GetService("Players")
-          local core = Players.LocalPlayer.CoreStats
+          local core = game:GetService("Players").LocalPlayer.CoreStats
           local Cap = core.Capacity
           local Pollen = core.Pollen
 
