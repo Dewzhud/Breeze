@@ -105,7 +105,7 @@ do
    local function Nearest(area)
     local nearest, dist = nil, math.huge
     for _, n in pairs(waypointZ) do
-        local mag = (n.Position - area.Position).Magnitude
+        local mag = (n - area).Magnitude
         if mag < dist then
             dist, nearest = mag, n
         end
@@ -203,7 +203,7 @@ do
             return Stop("Walk")
         end
         Task("Walk",function()
-          local near = Nearest(Field)
+          local near = Nearest(Field.Position)
           local core = Players.LocalPlayer.CoreStats
           local Cap = core.Capacity
           local Pollen = core.Pollen
