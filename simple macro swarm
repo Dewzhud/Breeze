@@ -1,40 +1,208 @@
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+--[[  LIQUIDBOUNCE UI LIB (FULL INTERNAL UI)
+      by ChatGPT
+]]
 
-local Window = WindUI:CreateWindow({
-    Title = "Macro Swarm (LEGIT)",
-    Icon = "", 
-    Author = "Onett",
+local UIS = game:GetService("UserInputService")
 
-    Size = UDim2.fromOffset(580, 460),
-    MinSize = Vector2.new(560, 350),
-    MaxSize = Vector2.new(850, 560),
-    Transparent = true,
-    Theme = "Dark",
-    Resizable = true,
-    SideBarWidth = 150,
-    BackgroundImageTransparency = 0.42,
-    HideSearchBar = false,
-    ScrollBarEnabled = false,
-    
-  
-})
+local Lib = {}
 
-Window:Divider()
+local Theme = {
+    Accent = Color3.fromRGB(0,255,140),
+    BG = Color3.fromRGB(15,15,15),
+    Text = Color3.fromRGB(255,255,255)
+}
 
-local Section = Window:Section({
-    Title = "Main",
-    Icon = "",
-    Opened = true,
-})
+local function New(obj)
+    return Drawing.new(obj)
+end
 
-local Main = Section:Tab({
-    Title = "Main",
-    Icon = "sword", -- optional
-    Locked = false,
-})
+local ModuleList = {}  -- Show active modules
 
-local Utility = Section:Tab({
-    Title = "utility",
+-- Render module list on screen
+spawn(function()
+    while true do
+        local y = 100
+        for name,enabled in pairs(ModuleList) do
+            if enabled then
+                if not ModuleList[name.."_DRAW"] then
+                    ModuleList[name.."_DRAW"] = New("Text")
+                end
+                local t = ModuleList[name.."_DRAW"]
+                t.Text = name
+                t.Color = Theme.Accent
+                t.Size = 18
+                t.Position = Vector2.new(900, y)
+                t.Visible = true
+                y = y + 20
+            else
+                local t = ModuleList[name.."_DRAW"]
+                if t then t.Visible = false end
+            end
+        end
+        task.wait(0.05)
+    end
+end)
+
+------------------------------------------------------
+-- Window
+------------------------------------------------------
+function Lib:CreateWindow(Title)
+    local Window = {}
+    Window.Tabs = {}
+
+    -- Main
+    local Main = New("Square")
+    Main.Color = Theme.BG
+    Main.Filled = true
+    Main.Size = Vector2.new(520, 330)
+    Main.Position = Vector2.new(250, 200)
+
+    -- Title
+    local TitleBar = New("Text")
+    TitleBar.Text = Title
+    TitleBar.Size = 20
+    TitleBar.Color = Theme.Accent
+    TitleBar.Position = Main.Position + Vector2.new(10,10)
+
+    ------------------------------------------------------
+    -- Make draggable
+    local dragging = false
+    local offset
+
+    UIS.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            local mp = UIS:GetMouseLocation()
+            if mp.X > Main.Position.X and mp.X < Main.Position.X + Main.Size.X
+            and mp.Y > Main.Position.Y and mp.Y < Main.Position.Y + 40 then
+                dragging = true
+                offset = mp - Main.Position
+            end
+        end
+    end)
+
+    UIS.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging=false end
+    end)
+
+    UIS.InputChanged:Connect(function()
+        if dragging then
+            local mp = UIS:GetMouseLocation()
+            Main.Position = mp - offset
+            TitleBar.Position = Main.Position + Vector2.new(10,10)
+
+            for _,tab in pairs(Window.Tabs) do
+                if tab.TabButton then
+                    tab.TabButton.Position = tab.TabButton.Position - tab.LastPos + Main.Position
+                end
+                if tab.Items then
+                    for _,v in pairs(tab.Items) do
+                        if v.Label then
+                            v.Label.Position = v.Label.Position - v.LastPos + Main.Position
+                        end
+                        if v.Box then
+                            v.Box.Position = v.Box.Position - v.LastPos + Main.Position
+                        end
+                    end
+                end
+                tab.LastPos = Main.Position
+            end
+        end
+    end)
+
+    ------------------------------------------------------
+    -- Add Tab
+    ------------------------------------------------------
+    function Window:AddTab(name)
+        local Tab = {}
+        Tab.Items = {}
+        Tab.LastPos = Main.Position
+
+        -- Tab Button
+        Tab.TabButton = New("Text")
+        Tab.TabButton.Text = name
+        Tab.TabButton.Size = 18
+        Tab.TabButton.Color = Theme.Accent
+        Tab.TabButton.Position = Vector2.new(Main.Position.X + 10, Main.Position.Y + 50 + (#Window.Tabs)*30)
+        Tab.TabButton.Visible = true
+
+        table.insert(Window.Tabs, Tab)
+
+        -- Show/hide
+        UIS.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                local mp = UIS:GetMouseLocation()
+                local pos = Tab.TabButton.Position
+                if mp.X > pos.X and mp.X < pos.X + 100
+                and mp.Y > pos.Y-5 and mp.Y < pos.Y+20 then
+                    
+                    -- Hide all
+                    for _,t in pairs(Window.Tabs) do
+                        for _,item in pairs(t.Items) do
+                            if item.Label then item.Label.Visible = false end
+                            if item.Box then item.Box.Visible = false end
+                        end
+                    end
+
+                    -- Show selected
+                    for _,item in pairs(Tab.Items) do
+                        if item.Label then item.Label.Visible = true end
+                        if item.Box then item.Box.Visible = true end
+                    end
+                end
+            end
+        end)
+
+        ------------------------------------------------------
+        -- Toggle
+        ------------------------------------------------------
+        function Tab:AddToggle(text, callback)
+            local Item = {Type="Toggle"}
+            local y = Main.Position.Y + 50 + (#Tab.Items)*25 + 30
+
+            Item.Label = New("Text")
+            Item.Label.Text = text
+            Item.Label.Size = 18
+            Item.Label.Color = Theme.Text
+            Item.Label.Position = Vector2.new(Main.Position.X + 150, y)
+            Item.Label.Visible = false
+
+            Item.Box = New("Text")
+            Item.Box.Text = "[ OFF ]"
+            Item.Box.Size = 18
+            Item.Box.Color = Color3.fromRGB(255,0,0)
+            Item.Box.Position = Vector2.new(Main.Position.X + 400, y)
+            Item.Box.Visible = false
+
+            local state = false
+            ModuleList[text] = false
+
+            UIS.InputBegan:Connect(function(i)
+                if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                    local mp = UIS:GetMouseLocation()
+                    local pos = Item.Box.Position
+
+                    if mp.X > pos.X and mp.X < pos.X + 70
+                    and mp.Y > pos.Y-5 and mp.Y < pos.Y + 20 then
+                        state = not state
+                        Item.Box.Text = state and "[ ON ]" or "[ OFF ]"
+                        Item.Box.Color = state and Theme.Accent or Color3.fromRGB(255,0,0)
+
+                        ModuleList[text] = state
+                        pcall(callback, state)
+                    end
+                end
+            end)
+
+            table.insert(Tab.Items, Item)
+        end
+
+        return Tab
+    end
+
+    return Window
+end
+
+return Lib    Title = "utility",
     Icon = "tool-case", -- optional
     Locked = false,
 })
