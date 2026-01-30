@@ -1,424 +1,594 @@
---[[  LIQUIDBOUNCE UI LIB (FULL INTERNAL UI)
-      by ChatGPT
-]]
+-- Feather UI Library for Roblox
+-- Inspired by Feather Client Mod Menu
 
-local UIS = game:GetService("UserInputService")
+local FeatherUI = {}
+FeatherUI.__index = FeatherUI
 
-local Lib = {}
-
-local Theme = {
-    Accent = Color3.fromRGB(0,255,140),
-    BG = Color3.fromRGB(15,15,15),
-    Text = Color3.fromRGB(255,255,255)
+-- Colors based on the screenshot's aesthetic
+local COLORS = {
+    Background = Color3.fromRGB(30, 30, 35),
+    Sidebar = Color3.fromRGB(25, 25, 30),
+    Category = Color3.fromRGB(40, 40, 45),
+    Text = Color3.fromRGB(240, 240, 240),
+    Accent = Color3.fromRGB(100, 150, 255),
+    Button = Color3.fromRGB(50, 50, 55),
+    ButtonHover = Color3.fromRGB(60, 60, 65),
+    ToggleOn = Color3.fromRGB(100, 200, 100),
+    ToggleOff = Color3.fromRGB(80, 80, 85)
 }
 
-local function New(obj)
-    return Drawing.new(obj)
+local TWEEN_SERVICE = game:GetService("TweenService")
+local USER_INPUT_SERVICE = game:GetService("UserInputService")
+local RUN_SERVICE = game:GetService("RunService")
+
+-- Utility function to create rounded corners
+local function applyRoundCorners(frame, cornerRadius)
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0, cornerRadius)
+    uiCorner.Parent = frame
+    return uiCorner
 end
 
-local ModuleList = {}  -- Show active modules
+-- Utility function to create padding
+local function applyPadding(frame, padding)
+    local uiPadding = Instance.new("UIPadding")
+    uiPadding.PaddingLeft = UDim.new(0, padding)
+    uiPadding.PaddingRight = UDim.new(0, padding)
+    uiPadding.PaddingTop = UDim.new(0, padding)
+    uiPadding.PaddingBottom = UDim.new(0, padding)
+    uiPadding.Parent = frame
+    return uiPadding
+end
 
--- Render module list on screen
-spawn(function()
-    while true do
-        local y = 100
-        for name,enabled in pairs(ModuleList) do
-            if enabled then
-                if not ModuleList[name.."_DRAW"] then
-                    ModuleList[name.."_DRAW"] = New("Text")
-                end
-                local t = ModuleList[name.."_DRAW"]
-                t.Text = name
-                t.Color = Theme.Accent
-                t.Size = 18
-                t.Position = Vector2.new(900, y)
-                t.Visible = true
-                y = y + 20
-            else
-                local t = ModuleList[name.."_DRAW"]
-                if t then t.Visible = false end
-            end
-        end
-        task.wait(0.05)
+function FeatherUI:CreateWindow(title)
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "FeatherUI"
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.ResetOnSpawn = false
+    
+    if gethui then
+        screenGui.Parent = gethui()
+    elseif syn and syn.protect_gui then
+        syn.protect_gui(screenGui)
+        screenGui.Parent = game:GetService("CoreGui")
+    else
+        screenGui.Parent = game:GetService("CoreGui")
     end
-end)
-
-------------------------------------------------------
--- Window
-------------------------------------------------------
-function Lib:CreateWindow(Title)
-    local Window = {}
-    Window.Tabs = {}
-
-    -- Main
-    local Main = New("Square")
-    Main.Color = Theme.BG
-    Main.Filled = true
-    Main.Size = Vector2.new(520, 330)
-    Main.Position = Vector2.new(250, 200)
-
-    -- Title
-    local TitleBar = New("Text")
-    TitleBar.Text = Title
-    TitleBar.Size = 20
-    TitleBar.Color = Theme.Accent
-    TitleBar.Position = Main.Position + Vector2.new(10,10)
-
-    ------------------------------------------------------
-    -- Make draggable
+    
+    -- Main container
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 700, 0, 500)
+    mainFrame.Position = UDim2.new(0.5, -350, 0.5, -250)
+    mainFrame.BackgroundColor3 = COLORS.Background
+    mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    mainFrame.Parent = screenGui
+    
+    applyRoundCorners(mainFrame, 8)
+    
+    -- Title bar
+    local titleBar = Instance.new("Frame")
+    titleBar.Name = "TitleBar"
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
+    titleBar.BackgroundColor3 = COLORS.Sidebar
+    titleBar.Parent = mainFrame
+    
+    applyRoundCorners(titleBar, 8)
+    
+    local titleText = Instance.new("TextLabel")
+    titleText.Name = "Title"
+    titleText.Size = UDim2.new(1, -40, 1, 0)
+    titleText.Position = UDim2.new(0, 15, 0, 0)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = title or "FEATHER CLIENT"
+    titleText.TextColor3 = COLORS.Text
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    titleText.Font = Enum.Font.GothamBold
+    titleText.TextSize = 18
+    titleText.Parent = titleBar
+    
+    -- Close button
+    local closeButton = Instance.new("TextButton")
+    closeButton.Name = "CloseButton"
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Position = UDim2.new(1, -35, 0.5, -15)
+    closeButton.AnchorPoint = Vector2.new(0, 0.5)
+    closeButton.BackgroundColor3 = COLORS.Button
+    closeButton.TextColor3 = COLORS.Text
+    closeButton.Text = "×"
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.TextSize = 20
+    closeButton.Parent = titleBar
+    
+    applyRoundCorners(closeButton, 4)
+    
+    closeButton.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+    
+    -- Sidebar (Categories)
+    local sidebar = Instance.new("Frame")
+    sidebar.Name = "Sidebar"
+    sidebar.Size = UDim2.new(0, 180, 1, -40)
+    sidebar.Position = UDim2.new(0, 0, 0, 40)
+    sidebar.BackgroundColor3 = COLORS.Sidebar
+    sidebar.Parent = mainFrame
+    
+    -- Content area
+    local contentFrame = Instance.new("Frame")
+    contentFrame.Name = "ContentFrame"
+    contentFrame.Size = UDim2.new(1, -180, 1, -40)
+    contentFrame.Position = UDim2.new(0, 180, 0, 40)
+    contentFrame.BackgroundColor3 = COLORS.Background
+    contentFrame.ClipsDescendants = true
+    contentFrame.Parent = mainFrame
+    
+    -- Category buttons container
+    local categoryList = Instance.new("ScrollingFrame")
+    categoryList.Name = "CategoryList"
+    categoryList.Size = UDim2.new(1, 0, 1, 0)
+    categoryList.BackgroundTransparency = 1
+    categoryList.ScrollBarThickness = 4
+    categoryList.ScrollBarImageColor3 = COLORS.Accent
+    categoryList.Parent = sidebar
+    
+    local uiListLayout = Instance.new("UIListLayout")
+    uiListLayout.Padding = UDim.new(0, 5)
+    uiListLayout.Parent = categoryList
+    
+    applyPadding(categoryList, 10)
+    
+    -- Content container
+    local contentScrolling = Instance.new("ScrollingFrame")
+    contentScrolling.Name = "ContentScrolling"
+    contentScrolling.Size = UDim2.new(1, 0, 1, 0)
+    contentScrolling.BackgroundTransparency = 1
+    contentScrolling.ScrollBarThickness = 4
+    contentScrolling.ScrollBarImageColor3 = COLORS.Accent
+    contentScrolling.Parent = contentFrame
+    
+    local contentListLayout = Instance.new("UIListLayout")
+    contentListLayout.Padding = UDim.new(0, 10)
+    contentListLayout.Parent = contentScrolling
+    
+    applyPadding(contentScrolling, 15)
+    
+    local window = {
+        ScreenGui = screenGui,
+        MainFrame = mainFrame,
+        TitleBar = titleBar,
+        Sidebar = sidebar,
+        ContentFrame = contentFrame,
+        Categories = {},
+        CurrentCategory = nil
+    }
+    
+    setmetatable(window, self)
+    
+    -- Make window draggable
     local dragging = false
-    local offset
-
-    UIS.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            local mp = UIS:GetMouseLocation()
-            if mp.X > Main.Position.X and mp.X < Main.Position.X + Main.Size.X
-            and mp.Y > Main.Position.Y and mp.Y < Main.Position.Y + 40 then
-                dragging = true
-                offset = mp - Main.Position
-            end
-        end
-    end)
-
-    UIS.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging=false end
-    end)
-
-    UIS.InputChanged:Connect(function()
-        if dragging then
-            local mp = UIS:GetMouseLocation()
-            Main.Position = mp - offset
-            TitleBar.Position = Main.Position + Vector2.new(10,10)
-
-            for _,tab in pairs(Window.Tabs) do
-                if tab.TabButton then
-                    tab.TabButton.Position = tab.TabButton.Position - tab.LastPos + Main.Position
-                end
-                if tab.Items then
-                    for _,v in pairs(tab.Items) do
-                        if v.Label then
-                            v.Label.Position = v.Label.Position - v.LastPos + Main.Position
-                        end
-                        if v.Box then
-                            v.Box.Position = v.Box.Position - v.LastPos + Main.Position
-                        end
-                    end
-                end
-                tab.LastPos = Main.Position
-            end
-        end
-    end)
-
-    ------------------------------------------------------
-    -- Add Tab
-    ------------------------------------------------------
-    function Window:AddTab(name)
-        local Tab = {}
-        Tab.Items = {}
-        Tab.LastPos = Main.Position
-
-        -- Tab Button
-        Tab.TabButton = New("Text")
-        Tab.TabButton.Text = name
-        Tab.TabButton.Size = 18
-        Tab.TabButton.Color = Theme.Accent
-        Tab.TabButton.Position = Vector2.new(Main.Position.X + 10, Main.Position.Y + 50 + (#Window.Tabs)*30)
-        Tab.TabButton.Visible = true
-
-        table.insert(Window.Tabs, Tab)
-
-        -- Show/hide
-        UIS.InputBegan:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                local mp = UIS:GetMouseLocation()
-                local pos = Tab.TabButton.Position
-                if mp.X > pos.X and mp.X < pos.X + 100
-                and mp.Y > pos.Y-5 and mp.Y < pos.Y+20 then
-                    
-                    -- Hide all
-                    for _,t in pairs(Window.Tabs) do
-                        for _,item in pairs(t.Items) do
-                            if item.Label then item.Label.Visible = false end
-                            if item.Box then item.Box.Visible = false end
-                        end
-                    end
-
-                    -- Show selected
-                    for _,item in pairs(Tab.Items) do
-                        if item.Label then item.Label.Visible = true end
-                        if item.Box then item.Box.Visible = true end
-                    end
-                end
-            end
-        end)
-
-        ------------------------------------------------------
-        -- Toggle
-        ------------------------------------------------------
-        function Tab:AddToggle(text, callback)
-            local Item = {Type="Toggle"}
-            local y = Main.Position.Y + 50 + (#Tab.Items)*25 + 30
-
-            Item.Label = New("Text")
-            Item.Label.Text = text
-            Item.Label.Size = 18
-            Item.Label.Color = Theme.Text
-            Item.Label.Position = Vector2.new(Main.Position.X + 150, y)
-            Item.Label.Visible = false
-
-            Item.Box = New("Text")
-            Item.Box.Text = "[ OFF ]"
-            Item.Box.Size = 18
-            Item.Box.Color = Color3.fromRGB(255,0,0)
-            Item.Box.Position = Vector2.new(Main.Position.X + 400, y)
-            Item.Box.Visible = false
-
-            local state = false
-            ModuleList[text] = false
-
-            UIS.InputBegan:Connect(function(i)
-                if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                    local mp = UIS:GetMouseLocation()
-                    local pos = Item.Box.Position
-
-                    if mp.X > pos.X and mp.X < pos.X + 70
-                    and mp.Y > pos.Y-5 and mp.Y < pos.Y + 20 then
-                        state = not state
-                        Item.Box.Text = state and "[ ON ]" or "[ OFF ]"
-                        Item.Box.Color = state and Theme.Accent or Color3.fromRGB(255,0,0)
-
-                        ModuleList[text] = state
-                        pcall(callback, state)
-                    end
+    local dragStart, frameStart
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            frameStart = mainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
                 end
             end)
-
-            table.insert(Tab.Items, Item)
-        end
-
-        return Tab
-    end
-
-    return Window
-end
-
-return Lib    Title = "utility",
-    Icon = "tool-case", -- optional
-    Locked = false,
-})
-
-local Render = Section:Tab({
-    Title = "render",
-    Icon = "eye", -- optional
-    Locked = false,
-})
-
-
-local TaskFlags = {}
-
-function Task(name, func)
-    if TaskFlags[name] then return end 
-    TaskFlags[name] = true
-    task.spawn(function()
-        while TaskFlags[name] do
-            func()
-            task.wait(.1)
         end
     end)
-end
-
-function Stop(name)
-    TaskFlags[name] = false
-end
-
-
-
-local function GetDist(p1,p2)
-    return (p1 - p2).Magnitude
-end
-
-
-do 
-    local waypointZ ={
-        CFrame.new(-111.430428, 4.91108656, 271.171844, 0.999958992, -3.17094884e-09, 0.00905513112, 3.84649734e-09, 1, -7.45865023e-08, -0.00905513112, 7.46182778e-08, 0.999958992), --spawn
-        CFrame.new(-108.973328, 3.99999976, 172.421021, 0.997226119, -6.08509554e-09, -0.0744313225, 4.54527394e-09, 1, -2.08572075e-08, 0.0744313225, 2.04610409e-08, 0.997226119), -- corner
-        CFrame.new(-108.973328, 3.99999976, 172.421021, 0.997226119, -6.08509554e-09, -0.0744313225, 4.54527394e-09, 1, -2.08572075e-08, 0.0744313225, 2.04610409e-08, 0.997226119),
-        CFrame.new(-2.99104142, 4.26106167, 171.278656, 0.994760334, -5.86745337e-08, -0.102234378, 5.46336132e-08, 1, -4.23261213e-08, 0.102234378, 3.65189123e-08, 0.994760334),  
-        CFrame.new(-2.73469853, 19.9999981, 41.236969, 0.999326169, 3.95413524e-09, 0.0367041267, -4.25405267e-09, 1, 8.09312883e-09, -0.0367041267, -8.24381718e-09, 0.999326169), --front lv 15 door
-        CFrame.new(-2.73469853, 19.9999981, 41.236969, 0.999326169, 3.95413524e-09, 0.0367041267, -4.25405267e-09, 1, 8.09312883e-09, -0.0367041267, -8.24381718e-09, 0.999326169), -- lv 15 Door
-        CFrame.new(-133.415436, 19.9999981, 56.9060936, 0.12101718, -6.26261638e-08, 0.99265039, 1.23290187e-08, 1, 6.15867748e-08, -0.99265039, 4.78534723e-09, 0.12101718), -- Strawberry Field
     
+    titleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(
+                frameStart.X.Scale, frameStart.X.Offset + delta.X,
+                frameStart.Y.Scale, frameStart.Y.Offset + delta.Y
+            )
+        end
+    end)
+    
+    return window
+end
+
+function FeatherUI:CreateCategory(name)
+    local categoryButton = Instance.new("TextButton")
+    categoryButton.Name = name .. "Button"
+    categoryButton.Size = UDim2.new(1, 0, 0, 40)
+    categoryButton.BackgroundColor3 = COLORS.Category
+    categoryButton.TextColor3 = COLORS.Text
+    categoryButton.Text = name:upper()
+    categoryButton.Font = Enum.Font.Gotham
+    categoryButton.TextSize = 14
+    categoryButton.AutoButtonColor = false
+    categoryButton.Parent = self.Sidebar:FindFirstChild("CategoryList")
+    
+    applyRoundCorners(categoryButton, 6)
+    
+    local categoryContent = Instance.new("Frame")
+    categoryContent.Name = name .. "Content"
+    categoryContent.Size = UDim2.new(1, 0, 0, 0)
+    categoryContent.BackgroundTransparency = 1
+    categoryContent.Visible = false
+    categoryContent.Parent = self.ContentFrame:FindFirstChild("ContentScrolling")
+    
+    local contentLayout = Instance.new("UIListLayout")
+    contentLayout.Padding = UDim.new(0, 10)
+    contentLayout.Parent = categoryContent
+    
+    local category = {
+        Name = name,
+        Button = categoryButton,
+        Content = categoryContent,
+        Elements = {}
     }
-
-   
-    local PFS = game:GetService("PathfindingService")
-    local Me = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
-    local hum = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
-
-
-   
-    _G.WalkE = false
-    _G.Token = false
-    local Field
-
-
-   local function Nearest(area)
-    local nearest, dist = nil, math.huge
-    for _, n in pairs(waypointZ) do
-        local mag = (n.Position - area).Magnitude
-        if mag < dist then
-            dist, nearest = mag, n
-        end
-    end
-    return nearest
-    end
-
-
-    local function Go(area)
-        local path = PFS:CreatePath({
-            AgentCanJump = true
-        })
-        PFS:ComputeAsync(Me.Position,area.Position)
-
-        if path.Status == Enum.PathStatus.Success then
-            return false
-        end
-
-        for _, wp in pairs(path:GetWaypoints()) do
-            if wp.Action == Enum.PathWaypointAction.Jump then
-                hum.Jump = true
-            end
-            hum:MoveTo(wp.Position)
-            if not hum.MoveToFinished:Wait() then
-                return false
-            end
-        end
-
-
-        return true
-
-    end
-
-
-
-
-    local function GetPoint()
-        local Size = Field.Size
-        local Cf = Field.CFrame
-       
-        local x = math.random(-Size.X/2 , -Size.X/2)
-        local z = math.random(-Size.Z/2 , -Size.Z/2)
-        return Cf:PointToWorldSpace(Vector3.new(x,0,z))
-    end
-
-   
     
+    table.insert(self.Categories, category)
+    
+    -- Select first category by default
+    if #self.Categories == 1 then
+        self:SelectCategory(category)
+    end
+    
+    categoryButton.MouseButton1Click:Connect(function()
+        self:SelectCategory(category)
+    end)
+    
+    -- Hover effects
+    categoryButton.MouseEnter:Connect(function()
+        if self.CurrentCategory ~= category then
+            TWEEN_SERVICE:Create(categoryButton, TweenInfo.new(0.2), {
+                BackgroundColor3 = COLORS.ButtonHover
+            }):Play()
+        end
+    end)
+    
+    categoryButton.MouseLeave:Connect(function()
+        if self.CurrentCategory ~= category then
+            TWEEN_SERVICE:Create(categoryButton, TweenInfo.new(0.2), {
+                BackgroundColor3 = COLORS.Category
+            }):Play()
+        end
+    end)
+    
+    return category
+end
 
-    local Dropdown = Main:Dropdown({
-    Title = "Field",
-    Desc = "Choose ur field",
-    Values = { 
-        "Mushroom Field",
-        "Sunflower Field",
-        "Dandelion Field",
-        "Clover Field",
-        "Blue Flower Field",
-        "Spider Field",
-        "Strawberry Field",
-        "Bamboo Field",
-        "Pineapple Patch",
-        "Cactus Field",
-        "Pumpkin Patch",
-        "Pine Tree Forest",
-        "Rose Field",
-        "Mountain Top Field",
+function FeatherUI:SelectCategory(category)
+    if self.CurrentCategory then
+        -- Deselect previous category
+        TWEEN_SERVICE:Create(self.CurrentCategory.Button, TweenInfo.new(0.2), {
+            BackgroundColor3 = COLORS.Category
+        }):Play()
+        self.CurrentCategory.Content.Visible = false
+    end
+    
+    -- Select new category
+    self.CurrentCategory = category
+    category.Content.Visible = true
+    category.Content.Size = UDim2.new(1, 0, 0, category.Content.UIListLayout.AbsoluteContentSize.Y)
+    
+    TWEEN_SERVICE:Create(category.Button, TweenInfo.new(0.2), {
+        BackgroundColor3 = COLORS.Accent
+    }):Play()
+end
+
+function FeatherUI:CreateToggle(category, name, defaultValue, callback)
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Name = name .. "Toggle"
+    toggleFrame.Size = UDim2.new(1, 0, 0, 40)
+    toggleFrame.BackgroundColor3 = COLORS.Category
+    toggleFrame.Parent = category.Content
+    
+    applyRoundCorners(toggleFrame, 6)
+    
+    local toggleLabel = Instance.new("TextLabel")
+    toggleLabel.Name = "Label"
+    toggleLabel.Size = UDim2.new(0.7, -10, 1, 0)
+    toggleLabel.Position = UDim2.new(0, 10, 0, 0)
+    toggleLabel.BackgroundTransparency = 1
+    toggleLabel.TextColor3 = COLORS.Text
+    toggleLabel.Text = name
+    toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    toggleLabel.Font = Enum.Font.Gotham
+    toggleLabel.TextSize = 14
+    toggleLabel.Parent = toggleFrame
+    
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Name = "ToggleButton"
+    toggleButton.Size = UDim2.new(0, 50, 0, 25)
+    toggleButton.Position = UDim2.new(1, -60, 0.5, -12.5)
+    toggleButton.AnchorPoint = Vector2.new(1, 0.5)
+    toggleButton.BackgroundColor3 = defaultValue and COLORS.ToggleOn or COLORS.ToggleOff
+    toggleButton.Text = ""
+    toggleButton.AutoButtonColor = false
+    toggleButton.Parent = toggleFrame
+    
+    applyRoundCorners(toggleButton, 12)
+    
+    local toggleCircle = Instance.new("Frame")
+    toggleCircle.Name = "ToggleCircle"
+    toggleCircle.Size = UDim2.new(0, 21, 0, 21)
+    toggleCircle.Position = UDim2.new(0, defaultValue and 29 or 2, 0.5, -10.5)
+    toggleCircle.AnchorPoint = Vector2.new(0, 0.5)
+    toggleCircle.BackgroundColor3 = COLORS.Text
+    toggleCircle.Parent = toggleButton
+    
+    applyRoundCorners(toggleCircle, 10)
+    
+    local state = defaultValue or false
+    
+    local function updateToggle()
+        local targetPos = state and UDim2.new(0, 29, 0.5, -10.5) or UDim2.new(0, 2, 0.5, -10.5)
+        local targetColor = state and COLORS.ToggleOn or COLORS.ToggleOff
         
-        },
-    Value = "Mushroom Field",
-    Callback = function(option) 
-        Field = workspace.FlowerZones:WaitForChild(option)
-    end
-    })
-
-    local Toggle1 = Main:Toggle({
-    Title = "Walk To Token",
-    Desc = "Radom pos to walk in field",
-    Icon = "check",
-    Type = "Checkbox",
-    Value = false, -- default value
-    Callback = function(state) 
-        _G.Token = state
-    end
-    })
-
-    local WalkToggle = Main:Toggle({
-    Title = "Farm",
-    Desc = "Radom pos to walk in field",
-    Icon = "check",
-    Type = "Checkbox",
-    Value = false, -- default value
-    Callback = function(state) 
-        _G.WalkE = state
-        if not _G.WalkE then
-            return Stop("Walk")
+        TWEEN_SERVICE:Create(toggleCircle, TweenInfo.new(0.2), {
+            Position = targetPos
+        }):Play()
+        
+        TWEEN_SERVICE:Create(toggleButton, TweenInfo.new(0.2), {
+            BackgroundColor3 = targetColor
+        }):Play()
+        
+        if callback then
+            callback(state)
         end
-        Task("Walk",function()
-          local core = game:GetService("Players").LocalPlayer.CoreStats
-          local Cap = core.Capacity
-          local Pollen = core.Pollen
-            if not Field then return end
-            if Pollen.Value == Cap.Value then
+    end
+    
+    toggleButton.MouseButton1Click:Connect(function()
+        state = not state
+        updateToggle()
+    end)
+    
+    updateToggle()
+    
+    return {
+        Frame = toggleFrame,
+        SetState = function(newState)
+            state = newState
+            updateToggle()
+        end,
+        GetState = function()
+            return state
+        end
+    }
+end
 
+function FeatherUI:CreateButton(category, name, callback)
+    local button = Instance.new("TextButton")
+    button.Name = name .. "Button"
+    button.Size = UDim2.new(1, 0, 0, 40)
+    button.BackgroundColor3 = COLORS.Button
+    button.TextColor3 = COLORS.Text
+    button.Text = name
+    button.Font = Enum.Font.Gotham
+    button.TextSize = 14
+    button.AutoButtonColor = false
+    button.Parent = category.Content
+    
+    applyRoundCorners(button, 6)
+    
+    button.MouseButton1Click:Connect(function()
+        if callback then
+            callback()
+        end
+    end)
+    
+    -- Hover effects
+    button.MouseEnter:Connect(function()
+        TWEEN_SERVICE:Create(button, TweenInfo.new(0.2), {
+            BackgroundColor3 = COLORS.ButtonHover
+        }):Play()
+    end)
+    
+    button.MouseLeave:Connect(function()
+        TWEEN_SERVICE:Create(button, TweenInfo.new(0.2), {
+            BackgroundColor3 = COLORS.Button
+        }):Play()
+    end)
+    
+    return button
+end
 
-                print("Full")
-
-            else
-                local near = Nearest(Field.Position)
-                if near then
-                    local Suc = Go(near)
-                    if Suc then
-                       local WalkE = GetPoint()
-                       hum:MoveTo(WalkE)
-                    end
+function FeatherUI:CreateSlider(category, name, minValue, maxValue, defaultValue, callback)
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Name = name .. "Slider"
+    sliderFrame.Size = UDim2.new(1, 0, 0, 60)
+    sliderFrame.BackgroundColor3 = COLORS.Category
+    sliderFrame.Parent = category.Content
+    
+    applyRoundCorners(sliderFrame, 6)
+    
+    local sliderLabel = Instance.new("TextLabel")
+    sliderLabel.Name = "Label"
+    sliderLabel.Size = UDim2.new(1, -20, 0, 20)
+    sliderLabel.Position = UDim2.new(0, 10, 0, 5)
+    sliderLabel.BackgroundTransparency = 1
+    sliderLabel.TextColor3 = COLORS.Text
+    sliderLabel.Text = name .. ": " .. defaultValue
+    sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+    sliderLabel.Font = Enum.Font.Gotham
+    sliderLabel.TextSize = 14
+    sliderLabel.Parent = sliderFrame
+    
+    local sliderTrack = Instance.new("Frame")
+    sliderTrack.Name = "Track"
+    sliderTrack.Size = UDim2.new(1, -20, 0, 6)
+    sliderTrack.Position = UDim2.new(0, 10, 0, 35)
+    sliderTrack.BackgroundColor3 = COLORS.Button
+    sliderTrack.Parent = sliderFrame
+    
+    applyRoundCorners(sliderTrack, 3)
+    
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Name = "Fill"
+    sliderFill.Size = UDim2.new(0, 0, 1, 0)
+    sliderFill.BackgroundColor3 = COLORS.Accent
+    sliderFill.Parent = sliderTrack
+    
+    applyRoundCorners(sliderFill, 3)
+    
+    local sliderButton = Instance.new("TextButton")
+    sliderButton.Name = "SliderButton"
+    sliderButton.Size = UDim2.new(0, 20, 0, 20)
+    sliderButton.Position = UDim2.new(0, -10, 0.5, -10)
+    sliderButton.AnchorPoint = Vector2.new(0, 0.5)
+    sliderButton.BackgroundColor3 = COLORS.Text
+    sliderButton.Text = ""
+    sliderButton.AutoButtonColor = false
+    sliderButton.Parent = sliderTrack
+    
+    applyRoundCorners(sliderButton, 10)
+    
+    local value = defaultValue or minValue
+    local isDragging = false
+    
+    local function updateSlider()
+        local percentage = (value - minValue) / (maxValue - minValue)
+        sliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+        sliderButton.Position = UDim2.new(percentage, -10, 0.5, -10)
+        sliderLabel.Text = name .. ": " .. math.floor(value * 100) / 100
+        
+        if callback then
+            callback(value)
+        end
+    end
+    
+    local function getValueFromPosition(x)
+        local relativeX = math.clamp(x - sliderTrack.AbsolutePosition.X, 0, sliderTrack.AbsoluteSize.X)
+        local percentage = relativeX / sliderTrack.AbsoluteSize.X
+        return minValue + percentage * (maxValue - minValue)
+    end
+    
+    sliderButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isDragging = true
+            
+            local connection
+            connection = RUN_SERVICE.RenderStepped:Connect(function()
+                if not isDragging then
+                    connection:Disconnect()
+                    return
                 end
-            end
-
-        end)
-
-
-    end
-    })
-
-
-end
-
-do
-    local VT = game:GetService("VirtualInputManager")
-    _G.Enable = false
-    local ClickTg = Main:Toggle({
-    Title = "Enable CLick",
-    Desc = "ALWAYS LEGIT",
-    Icon = "check",
-    Type = "Checkbox",
-    Value = false, 
-    Callback = function(state) 
-        _G.Enable = state
-        if not Enable then
-            game:GetService"VirtualUser":Button1Down(Vector2.new(0.9, 0.9))
-            game:GetService"VirtualUser":Button1Up(Vector2.new(0.9, 0.9))
                 
-          return  Stop("Click")
+                local mousePos = USER_INPUT_SERVICE:GetMouseLocation()
+                value = getValueFromPosition(mousePos.X)
+                updateSlider()
+            end)
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    isDragging = false
+                end
+            end)
         end
-
-        Task("Click", function()
-                game:GetService"VirtualUser":Button1Down(Vector2.new(0.9, 0.9))
-                game:GetService"VirtualUser":Button1Up(Vector2.new(0.9, 0.9))
-        end)
-
-    end
-    })
-
-
-
-
+    end)
+    
+    sliderTrack.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local mousePos = USER_INPUT_SERVICE:GetMouseLocation()
+            value = getValueFromPosition(mousePos.X)
+            updateSlider()
+        end
+    end)
+    
+    updateSlider()
+    
+    return {
+        Frame = sliderFrame,
+        SetValue = function(newValue)
+            value = math.clamp(newValue, minValue, maxValue)
+            updateSlider()
+        end,
+        GetValue = function()
+            return value
+        end
+    }
 end
+
+function FeatherUI:CreateLabel(category, name)
+    local labelFrame = Instance.new("Frame")
+    labelFrame.Name = name .. "Label"
+    labelFrame.Size = UDim2.new(1, 0, 0, 30)
+    labelFrame.BackgroundTransparency = 1
+    labelFrame.Parent = category.Content
+    
+    local label = Instance.new("TextLabel")
+    label.Name = "Label"
+    label.Size = UDim2.new(1, -20, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = COLORS.Text
+    label.Text = name
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 14
+    label.Parent = labelFrame
+    
+    return label
+end
+
+-- Example usage function
+function FeatherUI:Example()
+    local window = self:CreateWindow("FEATHER CLIENT")
+    
+    -- Create categories from the screenshot
+    local categories = {
+        "All",
+        "Mod Menu",
+        "HUD",
+        "Hypixel",
+        "PvP",
+        "Armor",
+        "Status",
+        "Auto Text",
+        "BOSSBAR",
+        "CPS",
+        "Combo",
+        "Display",
+        "Coordinates"
+    }
+    
+    local categoryObjects = {}
+    
+    for _, categoryName in ipairs(categories) do
+        categoryObjects[categoryName] = window:CreateCategory(categoryName)
+    end
+    
+    -- Add some example elements to the "PvP" category
+    local pvpCategory = categoryObjects["PvP"]
+    
+    window:CreateToggle(pvpCategory, "Auto Clicker", false, function(state)
+        print("Auto Clicker:", state)
+    end)
+    
+    window:CreateSlider(pvpCategory, "CPS", 1, 20, 10, function(value)
+        print("CPS:", value)
+    end)
+    
+    window:CreateButton(pvpCategory, "Test Button", function()
+        print("Button clicked!")
+    end)
+    
+    window:CreateLabel(pvpCategory, "PvP Settings")
+    
+    -- Add elements to "HUD" category
+    local hudCategory = categoryObjects["HUD"]
+    
+    window:CreateToggle(hudCategory, "Show Coordinates", true, function(state)
+        print("Show Coordinates:", state)
+    end)
+    
+    window:CreateToggle(hudCategory, "Show FPS", true, function(state)
+        print("Show FPS:", state)
+    end)
+    
+    return window
+end
+
+return FeatherUI
