@@ -247,25 +247,17 @@ towers_folder.ChildAdded:Connect(function(tower)
     local command = string.format('TDS:Place("%s", %.3f, %.3f, %.3f)', tower_name, pos_x, pos_y, pos_z)
     record_action(command)
     add_log("Placed " .. tower_name .. " (Index: " .. my_index .. ")")
-     
-     Replicator:GetAttributeChangedSignal("Voting"):Connect(function()
-    if not _G.record_strat then return end
+
+    Replicator:GetAttributeChangedSignal("Voting"):Connect(function()
+      if not _G.record_strat then return end
     
-    local votingState = Replicator:GetAttribute("Voting")
-    -- เช็คเงื่อนไขเพิ่มข้างใน
-    if votingState == "Skip" then
+       local votingState = Replicator:GetAttribute("Voting")
+        -- เช็คเงื่อนไขเพิ่มข้างใน
+          if votingState == "Skip" then
         record_action("TDS:Skip()")
         add_log("Skipped Wave")
-    end
-end)
-
-
-    replicator:GetAttributeChangedSignal("Upgrade"):Connect(function()
-        if not _G.record_strat then return end
-        record_action(string.format('TDS:Upgrade(%d)', my_index))
-        add_log("Upgraded Tower " .. my_index)
-    end)
-
+        end
+     end)
 
 end)
 
