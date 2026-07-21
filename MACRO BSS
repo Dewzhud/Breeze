@@ -123,27 +123,32 @@ local function record_action(command_str)
 end
 
 -- ═══════════════════════════════════════════════════════════════
--- __namecall hook for Voting (Skip) detection
+-- SAFE RemoteFunction detection (NO hookmetamethod - won't crash)
 -- ═══════════════════════════════════════════════════════════════
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
+-- Get the RemoteFunction
+local remote_function = replicated_storage:FindFirstChild("RemoteFunction")
+if not remote_function then
+    remote_function = replicated_storage:WaitForChild("RemoteFunction", 5)
+end
 
-    -- Check if it's a RemoteFunction and method is InvokeServer
-    if self:IsA("RemoteFunction") and method == "InvokeServer" then
-        -- Check if args match {"Voting", "Skip"}
-        if typeof(args[1]) == "table" and args[1][1] == "Voting" and args[1][2] == "Skip" then
-            if _G.record_strat then
-                record_action("TDS:Skip()")
-                add_log("Skipped Wave (via hook)")
-            end
+if remote_function then
+    -- Store the original InvokeServer method
+    local original_invoke = remote_function.InvokeServer
+    
+    -- Override it safely (no metamethod hooking)
+    remote_function.InvokeServer = function(self, ...)
+        local args = {...}
+        
+        -- Check for Voting/Skip pattern
+        if _G.record_strat and type(args[1]) == "table" and args[1][1] == "Voting" and args[1][2] == "Skip" then
+            record_action("TDS:Skip()")
+            add_log("Skipped Wave (via RemoteFunction)")
         end
+        
+        -- Call the original function
+        return original_invoke(self, ...)
     end
-
-    -- Let the game continue normally
-    return oldNamecall(self, ...)
-end)
+end
 -- ═══════════════════════════════════════════════════════════════
 
 start_btn.MouseButton1Click:Connect(function()
@@ -291,4 +296,4 @@ towers_folder.ChildRemoved:Connect(function(tower)
     end
 end)
 
-add_log("Recorder Ready with Voting Hook")
+add_log("Recorder Ready (RemoteFunction Safe)")
