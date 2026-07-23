@@ -4,7 +4,6 @@ local player_gui = player:WaitForChild("PlayerGui")
 local user_input_service = game:GetService("UserInputService")
 local replicated_storage = game:GetService("ReplicatedStorage")
 local http_service = game:GetService("HttpService")
-local core_gui = game:GetService("CoreGui")
 
 local file_name = "Strat.txt"
 _G.record_strat = false
@@ -12,7 +11,7 @@ _G.record_strat = false
 local spawned_towers = {}
 local tower_count = 0
 
--- ===== STRATEGY RECORDER UI =====
+-- UI Setup
 local screen_gui = Instance.new("ScreenGui")
 screen_gui.Name = "strat_recorder_ui"
 screen_gui.ResetOnSpawn = false
@@ -34,6 +33,258 @@ resizer_frame.Size = UDim2.new(0, 20, 0, 20)
 resizer_frame.Position = UDim2.new(1, -20, 1, -20)
 resizer_frame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 resizer_frame.BackgroundTransparency = 0.5
+Instance.new("UICorner", resizer_frame).CornerRadius = UDim.new(1, 0)
+
+local is_resizing = false
+resizer_frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        is_resizing = true
+    end
+end)
+
+user_input_service.InputChanged:Connect(function(input)
+    if is_resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local mouse_pos = input.Position
+        local frame_pos = main_frame.AbsolutePosition
+        main_frame.Size = UDim2.new(0, math.max(200, mouse_pos.X - frame_pos.X), 0, math.max(150, mouse_pos.Y - frame_pos.Y))
+    end
+end)
+
+user_input_service.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        is_resizing = false
+    end
+end)
+
+local title_label = Instance.new("TextLabel", main_frame)
+title_label.Size = UDim2.new(1, -50, 0, 30)
+title_label.Position = UDim2.new(0, 10, 0, 5)
+title_label.Text = "Strat Recorder"
+title_label.TextColor3 = Color3.new(1, 1, 1)
+title_label.BackgroundTransparency = 1
+title_label.Font = Enum.Font.GothamBold
+title_label.TextSize = 18
+title_label.TextXAlignment = Enum.TextXAlignment.Left
+
+local close_btn = Instance.new("TextButton", main_frame)
+close_btn.Size = UDim2.new(0, 30, 0, 30)
+close_btn.Position = UDim2.new(1, -35, 0, 5)
+close_btn.BackgroundColor3 = Color3.fromRGB(60, 20, 20)
+close_btn.Text = "×"
+close_btn.TextColor3 = Color3.fromRGB(255, 100, 100)
+close_btn.TextSize = 20
+Instance.new("UICorner", close_btn)
+
+local log_box = Instance.new("ScrollingFrame", main_frame)
+log_box.Size = UDim2.new(0.9, 0, 0.6, 0)
+log_box.Position = UDim2.new(0.05, 0, 0.15, 0)
+log_box.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+log_box.ScrollBarThickness = 4
+local log_layout = Instance.new("UIListLayout", log_box)
+
+local start_btn = Instance.new("TextButton", main_frame)
+start_btn.Size = UDim2.new(0.42, 0, 0.12, 0)
+start_btn.Position = UDim2.new(0.05, 0, 0.82, 0)
+start_btn.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+start_btn.Text = "START"
+start_btn.Font = Enum.Font.GothamBold
+start_btn.TextColor3 = Color3.new(1, 1, 1)
+start_btn.TextScaled = true
+Instance.new("UICorner", start_btn)
+
+local stop_btn = Instance.new("TextButton", main_frame)
+stop_btn.Size = UDim2.new(0.42, 0, 0.12, 0)
+stop_btn.Position = UDim2.new(0.53, 0, 0.82, 0)
+stop_btn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
+stop_btn.Text = "STOP"
+stop_btn.Font = Enum.Font.GothamBold
+stop_btn.TextColor3 = Color3.new(1, 1, 1)
+stop_btn.TextScaled = true
+Instance.new("UICorner", stop_btn)
+
+local function add_log(msg)
+    local log_item = Instance.new("TextLabel", log_box)
+    log_item.Size = UDim2.new(1, -10, 0, 18)
+    log_item.BackgroundTransparency = 1
+    log_item.TextColor3 = Color3.fromRGB(200, 200, 200)
+    log_item.Text = "> " .. msg
+    log_item.Font = Enum.Font.Code
+    log_item.TextSize = 10
+    log_item.TextXAlignment = Enum.TextXAlignment.Left
+    
+    log_box.CanvasSize = UDim2.new(0, 0, 0, log_layout.AbsoluteContentSize.Y)
+    log_box.CanvasPosition = Vector2.new(0, log_box.CanvasSize.Y.Offset)
+end
+
+local function record_action(command_str)
+    if not _G.record_strat then return end
+    if appendfile then
+        appendfile(file_name, command_str .. "\n")
+    end
+end
+
+-- ===== HELPER FUNCTIONS =====
+
+local function contains_voting_keyword(str)
+    if type(str) ~= "string" then return false end
+    local lower = string.lower(str)
+    return string.find(lower, "vote") or 
+           string.find(lower, "voting") or 
+           string.find(lower, "skip") or
+           string.find(lower, "kick") or
+           string.find(lower, "yes") or
+           string.find(lower, "no") or
+           string.find(lower, "approve") or
+           string.find(lower, "deny")
+end
+
+local function check_args_for_voting(...)
+    local args = {...}
+    for _, arg in ipairs(args) do
+        if type(arg) == "string" and contains_voting_keyword(arg) then
+            return true
+        elseif type(arg) == "table" then
+            for k, v in pairs(arg) do
+                if (type(k) == "string" and contains_voting_keyword(k)) or
+                   (type(v) == "string" and contains_voting_keyword(v)) then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+local function serialize_argument(arg)
+    local arg_type = typeof(arg)
+    
+    if arg_type == "string" then
+        return string.format("%q", arg)
+    elseif arg_type == "number" or arg_type == "boolean" then
+        return tostring(arg)
+    elseif arg_type == "table" then
+        local success, json = pcall(http_service.JSONEncode, http_service, arg)
+        if success then return json end
+        
+        local items = {}
+        for k, v in pairs(arg) do
+            local key_str = type(k) == "string" and string.format("[%q]", k) or string.format("[%s]", tostring(k))
+            table.insert(items, string.format("%s=%s", key_str, serialize_argument(v)))
+        end
+        return "{" .. table.concat(items, ", ") .. "}"
+    elseif arg_type == "Vector3" then
+        return string.format('Vector3.new(%.3f, %.3f, %.3f)', arg.X, arg.Y, arg.Z)
+    elseif arg_type == "Vector2" then
+        return string.format('Vector2.new(%.3f, %.3f)', arg.X, arg.Y)
+    elseif arg_type == "CFrame" then
+        local p = arg.Position
+        return string.format('CFrame.new(%.3f, %.3f, %.3f)', p.X, p.Y, p.Z)
+    elseif arg_type == "Color3" then
+        return string.format('Color3.new(%.3f, %.3f, %.3f)', arg.R, arg.G, arg.B)
+    elseif arg_type == "UDim2" then
+        return string.format('UDim2.new(%.3f, %d, %.3f, %d)', arg.X.Scale, arg.X.Offset, arg.Y.Scale, arg.Y.Offset)
+    elseif arg_type == "EnumItem" then
+        return string.format('Enum.%s.%s', arg.EnumType.Name, arg.Name)
+    else
+        return "nil"
+    end
+end
+
+-- ===== NAME CALL HOOK (REPLACES MANUAL OVERWRITE) =====
+
+local raw_namecall
+if hookmetamethod then
+    raw_namecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+
+        if (method == "InvokeServer" or method == "invokeServer") and self:IsA("RemoteFunction") then
+            if check_args_for_voting(...) and _G.record_strat then
+                local arg_strings = {}
+                for i, arg in ipairs(args) do
+                    arg_strings[i] = serialize_argument(arg)
+                end
+                
+                local command = string.format('TDS:RemoteCall("%s", %s)', self.Name, table.concat(arg_strings, ", "))
+                record_action(command)
+                add_log(string.format("VOTE/SKIP Invoke: %s (%d args)", self.Name, #args))
+            end
+        end
+
+        return raw_namecall(self, ...)
+    end)
+else
+    add_log("Warning: 'hookmetamethod' unavailable in current environment.")
+end
+
+-- ===== START / STOP RECORDING =====
+
+start_btn.MouseButton1Click:Connect(function()
+    local current_mode = "Unknown"
+    local current_map = "Unknown"
+    
+    local state_folder = replicated_storage:FindFirstChild("State")
+    if state_folder then
+        if state_folder:FindFirstChild("Difficulty") then current_mode = state_folder.Difficulty.Value end
+        if state_folder:FindFirstChild("Map") then current_map = state_folder.Map.Value end
+    end
+
+    local tower1, tower2, tower3, tower4, tower5 = "None", "None", "None", "None", "None"
+    local current_modifiers = "" 
+    local state_replicators = replicated_storage:FindFirstChild("StateReplicators")
+
+    if state_replicators then
+        for _, folder in ipairs(state_replicators:GetChildren()) do
+            if folder.Name == "PlayerReplicator" and folder:GetAttribute("UserId") == player.UserId then
+                local equipped = folder:GetAttribute("EquippedTowers")
+                if type(equipped) == "string" then
+                    local cleaned_json = equipped:match("%[.*%]") 
+                    if cleaned_json then
+                        local success, tower_table = pcall(function() return http_service:JSONEncode(cleaned_json) end)
+                        if success and type(tower_table) == "table" then
+                            tower1, tower2, tower3, tower4, tower5 = tower_table[1] or "None", tower_table[2] or "None", tower_table[3] or "None", tower_table[4] or "None", tower_table[5] or "None"
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    _G.record_strat = true
+    for _, child in ipairs(log_box:GetChildren()) do
+        if child:IsA("TextLabel") then child:Destroy() end
+    end
+
+    add_log("Mode: " .. current_mode)
+    add_log("Map: " .. current_map)
+    add_log("--- Recording Started ---")
+    
+    if writefile then 
+        local config_header = string.format([[
+local TDS = loadstring(game:HttpGet("https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Library.lua"))()
+
+TDS:Loadout("%s", "%s", "%s", "%s", "%s")
+TDS:Mode("%s")
+TDS:GameInfo("%s", {%s})
+
+]], tower1, tower2, tower3, tower4, tower5, current_mode, current_map, current_modifiers)
+
+        writefile(file_name, config_header)
+        add_log("Created Strat.txt header")
+    end
+end)
+
+stop_btn.MouseButton1Click:Connect(function()
+    _G.record_strat = false
+    add_log("--- Recording Stopped ---")
+end)
+
+close_btn.MouseButton1Click:Connect(function()
+    _G.record_strat = false
+    screen_gui:Destroy()
+end)
+
+add_log("Recorder Ready - Intercepting InvokeServer calls")
 Instance.new("UICorner", resizer_frame).CornerRadius = UDim.new(1, 0)
 
 local is_resizing = false
