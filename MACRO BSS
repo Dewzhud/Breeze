@@ -259,42 +259,45 @@ user_input_service.InputEnded:Connect(function(input)
 end)
 
 -- ===== REMOTE FUNCTION HOOKING =====
+local hooked_invoke_remotes = {}
+
 local function hook_remote_function(remote)
     if not remote or not remote:IsA("RemoteFunction") then return end
-    if hooked_remotes[remote] then return end
+    if hooked_invoke_remotes[remote] then return end
     
     local remote_name = remote.Name
-    local original_invoke = remote.InvokeServer
     
-    -- Safety check: ensure original_invoke exists and is a function
-    if not original_invoke or type(original_invoke) ~= "function" then
-        add_log("WARN: Could not hook " .. remote_name .. " (InvokeServer not found)")
-        return
-    end
-    
-    remote.InvokeServer = function(self, ...)
-        local args = {...}
-        local has_voting = check_args_for_voting(...)
+    -- Wrap the remote function safely
+    pcall(function()
+        local original = remote.InvokeServer
         
-        if has_voting and _G.record_strat then
-            local arg_strings = {}
-            for i, arg in ipairs(args) do
-                arg_strings[i] = serialize_argument(arg)
+        remote.InvokeServer = function(self, ...)
+            local args = {...}
+            local has_voting = check_args_for_voting(...)
+            
+            if has_voting and _G.record_strat then
+                local arg_strings = {}
+                for i, arg in ipairs(args) do
+                    arg_strings[i] = serialize_argument(arg)
+                end
+                
+                local command = string.format('TDS:RemoteCall("%s", %s)', 
+                    remote_name,
+                    table.concat(arg_strings, ", ")
+                )
+                record_action(command)
+                add_log(string.format("🗳️ VOTE/SKIP: %s (%d args)", remote_name, #args))
             end
             
-            local command = string.format('TDS:RemoteCall("%s", %s)', 
-                remote_name,
-                table.concat(arg_strings, ", ")
-            )
-            record_action(command)
-            add_log(string.format("VOTE/SKIP Invoke: %s (%d args)", remote_name, #args))
+            -- Call the original function
+            if original then
+                return original(self, ...)
+            end
+            return nil
         end
         
-        -- Call original function directly (preserves proper context)
-        return original_invoke(self, ...)
-    end
-    
-    hooked_remotes[remote] = true
+        hooked_invoke_remotes[remote] = true
+    end)
 end
 
 -- ===== REMOTE EVENT HOOKING (Incoming Data) =====
